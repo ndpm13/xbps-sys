@@ -1,0 +1,43 @@
+name: Publish Crate to crates.io
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/void-linux/void-glibc-full:20250616R1
+      options: --platform linux/amd64
+
+    steps:
+      - name: Prepare container
+        run: |
+          # switch to repo-ci mirror
+          mkdir -p /etc/xbps.d && cp /usr/share/xbps.d/*-repository-*.conf /etc/xbps.d/
+          sed -i 's|repo-default|repo-ci|g' /etc/xbps.d/*-repository-*.conf
+          # install dependencies
+          xbps-install -Syu xbps && xbps-install -yu && xbps-install -y clang21-devel libxbps-devel cargo git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check
+        run: cargo check --verbose
+
+      - name: Test
+        run: cargo test --verbose
+
+      - name: Dry run
+        run: cargo publish --dry-run --verbose
+
+      - name: Publish
+        run: cargo publish --verbose
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
