@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 
 fn main() {
-    pkg_config::Config::new().probe("libxbps").unwrap();
+    println!("cargo:rustc-link-lib=xbps");
 
     let bindings = bindgen::builder()
         .header("wrapper.h")
